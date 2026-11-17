@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ heading }} · Book Market Research{% endblock %}
+{% block content %}
+<section class="panel narrow">
+    <h1>{{ heading }}</h1>
+    {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+    <form method="post" class="editor">
+        <input type="hidden" name="form_token" value="{{ form_token }}">
+        {% if revision %}
+            <input type="hidden" name="product_revision" value="{{ revision }}">
+        {% endif %}
+        <label>Product name <input required name="name" value="{{ fields.name }}"></label>
+        <label>Price (£) <input required name="price" inputmode="decimal" value="{{ fields.price }}"></label>
+        <label>Availability
+            <select name="availability">
+                {% for option in availability_options %}
+                    <option {{ 'selected' if fields.availability == option }}>{{ option }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Product URL <input required type="url" name="product_url" value="{{ fields.product_url }}"></label>
+        <label>Category (optional) <input name="category" maxlength="100" value="{{ fields.category }}"></label>
+        <label>Rating (optional)
+            <select name="rating">
+                <option value="">Not recorded</option>
+                {% for number in rating_options %}
+                    <option value="{{ number }}" {{ 'selected' if fields.rating == number|string }}>{{ number }} / 5 stars</option>
+                {% endfor %}
+            </select>
+        </label>
+        <div class="actions"><button>Save product</button><a href="{{ url_for('catalog') }}">Cancel</a></div>
+    </form>
+</section>
+{% endblock %}

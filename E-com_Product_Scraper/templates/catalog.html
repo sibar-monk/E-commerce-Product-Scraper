@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-heading">
+    <h1>Product catalog</h1>
+    <span>{{ total }} {{ 'product' if total == 1 else 'products' }} in database</span>
+</div>
+
+<section class="panel scrape">
+    <div class="section-heading">
+        <h2>Latest scrape</h2>
+        {% if latest %}<span>{{ latest.finished_at }}</span>{% endif %}
+    </div>
+    {% if latest %}
+        <dl class="metrics">
+            <div><dt>Pages read</dt><dd>{{ latest.pages_read }}</dd></div>
+            <div><dt>New books saved</dt><dd>{{ latest.added }}</dd></div>
+            <div><dt>Duplicates skipped</dt><dd>{{ latest.duplicates }}</dd></div>
+            <div><dt>Invalid cards skipped</dt><dd>{{ latest.invalid }}</dd></div>
+        </dl>
+        <p>{{ latest.unique_found }} distinct valid books this run · {{ latest.message }}</p>
+        <p class="source">Source · {{ latest.source }}</p>
+    {% else %}
+        <p>Run <code>python scraper.py</code> in your terminal, then refresh this page.</p>
+    {% endif %}
+</section>
+
+<section class="panel">
+    <div class="section-heading"><h2>Find products</h2></div>
+    <form class="filters" method="get" action="{{ url_for('catalog') }}">
+        <label>Product name <input name="name" value="{{ filters.name }}" placeholder="Search by title"></label>
+        <label>Min price (£) <input name="min_price" value="{{ filters.min_price }}" inputmode="decimal" placeholder="0.00"></label>
+        <label>Max price (£) <input name="max_price" value="{{ filters.max_price }}" inputmode="decimal" placeholder="60.00"></label>
+        <label>Availability
+            <select name="availability">
+                <option value="">Any status</option>
+                {% for option in availability_options %}
+                    <option {{ 'selected' if filters.availability == option }}>{{ option }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Category
+            <select name="category">
+                <option value="">Any category</option>
+                {% for item in categories %}
+                    <option {{ 'selected' if filters.category.casefold() == item.category.casefold() }}>{{ item.category }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Minimum rating
+            <select name="min_rating">
+                <option value="">Any rating</option>
+                {% for number in rating_options %}
+                    <option value="{{ number }}" {{ 'selected' if filters.min_rating == number|string }}>{{ number }} / 5{% if number < 5 %} or higher{% endif %}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <div class="actions"><button>Apply</button><a href="{{ url_for('catalog') }}">Clear</a></div>
+    </form>
+    {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+</section>
+
+{% if summary is not none %}
+<section class="panel results">
+    <div class="section-heading">
+        <h2>Results <span class="count">{{ summary.count }}</span></h2>
+        <div class="actions">
+            <a href="{{ url_for('export_csv') }}">Export all CSV</a>
+            {% if filters.values() | select | list %}
+                <a href="{{ url_for('export_csv', **filters) }}">Export filtered CSV</a>
+            {% endif %}
+        </div>
+    </div>
+    <dl class="metrics">
+        <div><dt>Cheapest in results</dt><dd>{{ summary.cheapest | gbp }}</dd></div>
+        <div><dt>Most expensive in results</dt><dd>{{ summary.most_expensive | gbp }}</dd></div>
+        <div><dt>Average in results</dt><dd>{{ summary.average | gbp }}</dd></div>
+    </dl>
+    {% if products %}
+        {% if summary.cheapest == summary.most_expensive %}
+            <p class="extremes">All matching products have the same price.</p>
+        {% else %}
+            <p class="extremes">
+                {% for product in products if product.price_pence == summary.cheapest %}
+                    Cheapest · <a href="{{ product.product_url }}">{{ product.name }}</a><br>
+                {% endfor %}
+                {% for product in products if product.price_pence == summary.most_expensive %}
+                    Most expensive · <a href="{{ product.product_url }}">{{ product.name }}</a><br>
+                {% endfor %}
+            </p>
+        {% endif %}
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Product results">
+            <table>
+                <thead><tr><th>ID</th><th>Product and source link</th><th>Price</th><th>Availability</th><th>Actions</th></tr></thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>{{ product.id }}</td>
+                        <td><a href="{{ product.product_url }}">{{ product.name }}</a>
+                            <div class="product-meta">
+                                <span>{{ product.category or 'Category not recorded' }}</span>
+                                <span>{{ (product.rating|string ~ ' / 5 stars') if product.rating else 'Rating not recorded' }}</span>
+                            </div>
+                        </td>
+                        <td>{{ product.price_pence | gbp }}</td>
+                        <td>{{ product.availability }}</td>
+                        <td><a href="{{ url_for('product_form', product_id=product.id) }}">Edit</a>
+                            <a class="danger-link" href="{{ url_for('delete_product', product_id=product.id) }}">Delete</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>{{ 'No products match these filters.' if total else 'No products saved yet.' }}</p>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}

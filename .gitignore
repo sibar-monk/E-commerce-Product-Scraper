@@ -1,0 +1,8 @@
+project_venv/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.env
+products.db*
+*.csv

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Delete product · Book Market Research{% endblock %}
+{% block content %}
+<section class="panel narrow">
+    <h1>Delete product</h1>
+    <p>Remove <strong>{{ product.name }}</strong> from your database?</p>
+    <form method="post" class="actions">
+        <input type="hidden" name="form_token" value="{{ form_token }}">
+        <input type="hidden" name="product_revision" value="{{ revision }}">
+        <button class="danger">Delete product</button>
+        <a href="{{ url_for('catalog') }}">Cancel</a>
+    </form>
+</section>
+{% endblock %}
